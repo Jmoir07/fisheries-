@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -62,45 +63,59 @@
                 </div>
             </div>
 
-            <!--vessel search panel -->
+            <!-- Vessel Search Panel -->
             <div class="panel vessel-search-panel">
-            <h3>Search vessels</h3>
-            <form id="vessel-search-form">
-                <label for="vessel-query">Vessel name, IMO, or MMSI</label>
-                <input id="vessel-query" name="query" required>
-                <button type="submit">Search</button>
-            </form>
-            <p id="vessel-search-status" role="status"></p>
-            <ul id="vessel-results"></ul>
-        </div>
+                <h3>Search vessels</h3>
+                <form id="vessel-search-form">
+                    <label for="vessel-query">Vessel name, IMO, or MMSI</label>
+                    <input id="vessel-query" name="query" required>
+                    <button type="submit">Search</button>
+                </form>
+                <p id="vessel-search-status" role="status"></p>
+                <ul id="vessel-results"></ul>
+            </div>
 
-            <div class="panel table-panel">
+            <!-- Combined Fishing Events and Activity Log -->
+            <div class="panel vessel-activity-panel table-panel">
                 <div class="panel-header">
-                    <h3>Activity Log</h3>
-
-
-  <button type="button" onclick="downloadCSV()">
-            Download CSV
-              </button>
+                    <h3>
+                        Activity Log:
+                        <span id="vesselName">No vessel selected</span>
+                    </h3>
+                    <button type="button" onclick="downloadCSV()">
+                        Download CSV
+                    </button>
                 </div>
-                <table class="vessel-table">
-                    <thead>
-                        <tr>
-                            <th>Vessel Name</th>
-                            <th>MMSI</th>
-                            <th>Flag</th>
-                            <th>Gear Type</th>
-                            <th>Event</th>
-                            <th>Hours</th>
-                            <th>Coordinates</th>
-                        </tr>
-                    </thead>
-                    <tbody id="vessel-tbody">
-                        <tr>
-                            <td colspan="7" style="opacity: 0.6;">No data loaded yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+                <p id="status" role="status">
+                    Search for a vessel and select View activity.
+                </p>
+
+                <div style="overflow-x: auto;">
+                    <table class="vessel-table">
+                        <thead>
+                            <tr>
+                                <th>Vessel Name</th>
+                                <th>MMSI</th>
+                                <th>Flag</th>
+                                <th>Gear Type</th>
+                                <th>Event</th>
+                                <th>Event Start</th>
+                                <th>Event End</th>
+                                <th>Hours</th>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vessel-tbody">
+                            <tr>
+                                <td colspan="10" style="opacity: 0.6;">
+                                    No fishing events loaded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

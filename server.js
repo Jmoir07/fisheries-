@@ -1,3 +1,6 @@
+
+require('dotenv').config();
+
 const bcrypt = require('bcryptjs'); 
 const express = require('express');
 const session = require('express-session');
@@ -19,6 +22,7 @@ const dbname = 'fisheries';
 const API = "https://gateway.api.globalfishingwatch.org/v3";
 
 const VESSEL_DATASET = "public-global-vessel-identity:latest";
+const EVENT_DATASET = "public-global-fishing-events:latest";
 
 let events = [];
 let currentRequest = 0;
@@ -60,7 +64,7 @@ app.get('/api/vessels/search', async (req, res) => {
         return res.status(400).json({ error: 'A search query is required.' });
     }
 
-    //looks for a token stored as locan env variable
+    //looks for a token stored as local env variable
     const token = process.env.GFW_API_TOKEN;
     if (!token) {
         return res.status(500).json({ error: 'GFW API token is not configured.' });
@@ -88,6 +92,106 @@ app.get('/api/vessels/search', async (req, res) => {
     } catch (err) {
         console.error('Could not reach GFW API:', err);
         res.status(502).json({ error: 'Could not reach the vessel API.' });
+    }
+});
+
+//api route for vessel fishing events
+app.get('/api/vessels/events', async (req, res) => {
+    if (!req.session.loggedin) {
+        return res.status(401).json({ error: 'Please log in.' });
+    }
+
+    const vesselId = typeof req.query.vesselId === 'string'
+        ? req.query.vesselId.trim()
+        : '';
+
+    if (!vesselId) {
+        return res.status(400).json({ error: 'A vessel ID is required.' });
+    }
+
+    const startDate = req.query.startDate || '2000-01-01';
+    const endDate = req.query.endDate || new Date().toISOString().slice(0, 10);
+
+    const limit = Math.min(
+        Math.max(parseInt(req.query.limit, 10) || 100, 1),
+        100
+    );
+
+    const offset = Math.max(
+        parseInt(req.query.offset, 10) || 0,
+        0
+    );
+
+    const validDate = date => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+
+        const parsed = new Date(`${date}T00:00:00.000Z`);
+
+        return !Number.isNaN(parsed.getTime()) &&
+            parsed.toISOString().slice(0, 10) === date;
+    };
+
+    if (!validDate(startDate) || !validDate(endDate)) {
+        return res.status(400).json({ error: 'Invalid date format.' });
+    }
+
+    if (startDate > endDate) {
+        return res.status(400).json({
+            error: 'Start date must be before end date.'
+        });
+    }
+
+    const token = process.env.GFW_API_TOKEN;
+
+    if (!token) {
+        return res.status(500).json({
+            error: 'GFW API token is not configured.'
+        });
+    }
+
+    const params = new URLSearchParams({
+        'vessels[0]': vesselId,
+        'datasets[0]': EVENT_DATASET,
+        'start-date': startDate,
+        'end-date': endDate,
+        limit: String(limit),
+        offset: String(offset)
+    });
+
+    try {
+        const response = await fetch(`${API}/events?${params.toString()}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('GFW events request failed:', response.status, data);
+            return res.status(response.status).json({
+                error: 'Could not retrieve fishing events.'
+            });
+        }
+
+        const entries = data.entries || [];
+
+        let nextOffset = data.nextOffset ?? null;
+
+        if (nextOffset == null && entries.length === limit) {
+            nextOffset = offset + entries.length;
+        }
+
+        res.json({
+            entries,
+            nextOffset
+        });
+
+    } catch (err) {
+        console.error('Could not retrieve GFW events:', err);
+        res.status(502).json({
+            error: 'Could not reach the fishing events API.'
+        });
     }
 });
 
